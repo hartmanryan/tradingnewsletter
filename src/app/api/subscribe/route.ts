@@ -24,7 +24,7 @@ export async function POST(req: Request) {
         // Build the URL reliably: extract the pure origin (e.g. https://system.quentn.com) and append the exact Swagger path
         let quentnUrl = '';
         try {
-            quentnUrl = new URL(quentnBaseUrl).origin + '/public/api/V1/contact';
+            quentnUrl = new URL(quentnBaseUrl).origin + '/public/api/v1/contact';
         } catch (e) {
             console.error('Invalid QUENTN_BASE_URL format:', quentnBaseUrl);
             return NextResponse.json({ error: 'QUENTN_BASE_URL is not a valid URL.' }, { status: 500 });
