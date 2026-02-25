@@ -21,9 +21,14 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: 'Simulated subscription' }, { status: 200 });
         }
 
-        // The endpoint is appended to the user-specific base URL
-        // Swagger docs state the exact path is: /public/api/V1/contact
-        const quentnUrl = new URL(quentnBaseUrl).origin + '/public/api/V1/contact';
+        // Build the URL reliably: extract the pure origin (e.g. https://system.quentn.com) and append the exact Swagger path
+        let quentnUrl = '';
+        try {
+            quentnUrl = new URL(quentnBaseUrl).origin + '/public/api/V1/contact';
+        } catch (e) {
+            console.error('Invalid QUENTN_BASE_URL format:', quentnBaseUrl);
+            return NextResponse.json({ error: 'QUENTN_BASE_URL is not a valid URL.' }, { status: 500 });
+        }
 
         try {
             // According to Quentn documentation, creating a contact requires specific field mapping

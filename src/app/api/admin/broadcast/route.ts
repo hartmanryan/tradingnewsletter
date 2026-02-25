@@ -76,8 +76,14 @@ ${escapeHtml(pineScriptCode.replace(/```(pinescript)?/g, ''))}
             console.warn("QUENTN_API_KEY or QUENTN_BASE_URL missing. Simulating broadcast send.");
             subscriberCount = 42; // simulated
         } else {
-            // Create the endpoint URL dynamically
-            const quentnBroadcastUrl = `${quentnBaseUrl.replace(/\/$/, '')}/broadcasts`;
+            // Build the URL reliably: extract the pure origin and append the broadcast path
+            let quentnBroadcastUrl = '';
+            try {
+                quentnBroadcastUrl = new URL(quentnBaseUrl).origin + '/public/api/V1/broadcasts';
+            } catch (e) {
+                console.error('Invalid QUENTN_BASE_URL format:', quentnBaseUrl);
+                return NextResponse.json({ error: 'QUENTN_BASE_URL is not a valid URL.' }, { status: 500 });
+            }
 
             const qRes = await fetch(quentnBroadcastUrl, {
                 method: 'POST',
