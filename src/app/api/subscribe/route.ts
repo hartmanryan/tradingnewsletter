@@ -47,17 +47,21 @@ export async function POST(req: Request) {
                 })
             });
 
-            if (!response.ok) {
-                const errorData = await response.text();
-                // Usually Quentn returns validation errors if the email format is rejected or the API URL is wrong (e.g., missing /cb/ or trigger IDs).
-                console.error('Quentn API Error Response:', errorData, 'HTTP Status:', response.status);
+            const responseData = await response.json().catch(() => ({}));
+            console.log('Quentn API Response Status:', response.status);
+            console.log('Quentn API Response Body:', responseData);
 
+            if (!response.ok) {
+                // Usually Quentn returns validation errors if the email format is rejected or the API URL is wrong (e.g., missing /cb/ or trigger IDs).
                 // If it's a 404, the user's base URL or endpoint shape is incorrect
                 if (response.status === 404) {
                     return NextResponse.json({ error: 'Quentn endpoint not found. Ensure QUENTN_BASE_URL is correct and points to a valid API Trigger / contact endpoint.' }, { status: 404 });
                 }
 
-                return NextResponse.json({ error: `Quentn API rejected the request (${response.status}). Check Vercel logs for details.` }, { status: response.status });
+                return NextResponse.json({
+                    error: `Quentn API rejected the request (${response.status}). Check Vercel/Server logs for details.`,
+                    details: responseData
+                }, { status: response.status });
             }
         } catch (fetchError: any) {
             console.error('Fetch to Quentn failed directly:', fetchError);
