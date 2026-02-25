@@ -22,7 +22,8 @@ export async function POST(req: Request) {
         }
 
         // The endpoint is appended to the user-specific base URL
-        const quentnUrl = `${quentnBaseUrl.replace(/\/$/, '')}/contact`;
+        // Swagger docs state the exact path is: /public/api/V1/contact
+        const quentnUrl = new URL(quentnBaseUrl).origin + '/public/api/V1/contact';
 
         try {
             // According to Quentn documentation, creating a contact requires specific field mapping
