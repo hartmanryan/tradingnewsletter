@@ -21,47 +21,64 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: 'Simulated subscription' }, { status: 200 });
         }
 
-        // Build the URL reliably: extract the pure origin (e.g. https://system.quentn.com) and append the exact Swagger path
-        let quentnUrl = '';
+        // Build the URL reliably: extract the pure origin (e.g. https://system.quentn.com)
+        let rootUrl = '';
         try {
-            quentnUrl = new URL(quentnBaseUrl).origin + '/public/api/v1/contact';
+            rootUrl = new URL(quentnBaseUrl).origin + '/public/api/v1';
         } catch (e) {
             console.error('Invalid QUENTN_BASE_URL format:', quentnBaseUrl);
             return NextResponse.json({ error: 'QUENTN_BASE_URL is not a valid URL.' }, { status: 500 });
         }
 
         try {
-            // According to Quentn documentation, creating a contact requires specific field mapping
-            const response = await fetch(quentnUrl, {
+            const authHeader = { 'Authorization': `Bearer ${quentnApiKey}`, 'Content-Type': 'application/json' };
+
+            // 1. Get Term ID for "tradingnewsletter"
+            const termName = "tradingnewsletter";
+            const termRes = await fetch(`${rootUrl}/terms/${termName}`, { headers: authHeader });
+            const termData = await termRes.json().catch(() => ({}));
+
+            if (!termRes.ok || !termData.id) {
+                console.warn(`Could not find ID for term "${termName}". Proceeding with contact creation anyway.`);
+            }
+            const termId = termData.id;
+
+            // 2. Create the Contact
+            const contactRes = await fetch(`${rootUrl}/contact`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${quentnApiKey}`
-                },
+                headers: authHeader,
                 body: JSON.stringify({
-                    // The Contact API expects a "contact" object wrapping the data
-                    contact: {
-                        mail: email,
-                        terms: ["tradingnewsletter"]
-                    }
+                    contact: { mail: email }
                 })
             });
 
-            const responseData = await response.json().catch(() => ({}));
-            console.log('Quentn API Response Status:', response.status);
-            console.log('Quentn API Response Body:', responseData);
+            const contactData = await contactRes.json().catch(() => ({}));
+            console.log('Quentn Create Contact Status:', contactRes.status);
 
-            if (!response.ok) {
-                // Usually Quentn returns validation errors if the email format is rejected or the API URL is wrong (e.g., missing /cb/ or trigger IDs).
-                // If it's a 404, the user's base URL or endpoint shape is incorrect
-                if (response.status === 404) {
-                    return NextResponse.json({ error: 'Quentn endpoint not found. Ensure QUENTN_BASE_URL is correct and points to a valid API Trigger / contact endpoint.' }, { status: 404 });
-                }
-
+            if (!contactRes.ok || !contactData.id) {
+                console.error('Quentn API Error During Contact Creation:', contactData);
                 return NextResponse.json({
-                    error: `Quentn API rejected the request (${response.status}). Check Vercel/Server logs for details.`,
-                    details: responseData
-                }, { status: response.status });
+                    error: `Quentn failed to create contact (${contactRes.status}).`,
+                    details: contactData
+                }, { status: contactRes.status });
+            }
+
+            const contactId = contactData.id;
+
+            // 3. Assign the Term (if ID was found)
+            if (termId) {
+                const assignRes = await fetch(`${rootUrl}/contact/${contactId}/terms`, {
+                    method: 'PUT',
+                    headers: authHeader,
+                    body: JSON.stringify([parseInt(termId)])
+                });
+
+                if (!assignRes.ok) {
+                    const assignError = await assignRes.text().catch(() => 'Unknown error');
+                    console.warn(`Failed to assign term ${termId} to contact ${contactId}:`, assignError);
+                } else {
+                    console.log(`Successfully assigned term ${termId} to contact ${contactId}`);
+                }
             }
         } catch (fetchError: any) {
             console.error('Fetch to Quentn failed directly:', fetchError);
