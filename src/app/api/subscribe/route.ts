@@ -33,8 +33,11 @@ export async function POST(req: Request) {
                     'Authorization': `Bearer ${quentnApiKey}`
                 },
                 body: JSON.stringify({
-                    mail: email,
-                    terms: ["tradingnewsletter"]
+                    // The Contact API expects a "contact" object wrapping the data
+                    contact: {
+                        mail: email,
+                        terms: ["tradingnewsletter"]
+                    }
                 })
             });
 
