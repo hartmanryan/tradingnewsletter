@@ -69,15 +69,17 @@ ${escapeHtml(pineScriptCode.replace(/```(pinescript)?/g, ''))}
 
         // Send Broadcast via Quentn API
         const quentnApiKey = process.env.QUENTN_API_KEY;
+        const quentnBaseUrl = process.env.QUENTN_BASE_URL;
         let subscriberCount = 0;
 
-        if (!quentnApiKey) {
-            console.warn("QUENTN_API_KEY missing. Simulating broadcast send.");
+        if (!quentnApiKey || !quentnBaseUrl) {
+            console.warn("QUENTN_API_KEY or QUENTN_BASE_URL missing. Simulating broadcast send.");
             subscriberCount = 42; // simulated
         } else {
-            // Typically you would trigger a broadcast object or campaign loop in Quentn
-            // Example simulated endpoint structure for sending an email
-            const qRes = await fetch('https://api.quentn.com/public/v1/broadcasts', {
+            // Create the endpoint URL dynamically
+            const quentnBroadcastUrl = `${quentnBaseUrl.replace(/\/$/, '')}/broadcasts`;
+
+            const qRes = await fetch(quentnBroadcastUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

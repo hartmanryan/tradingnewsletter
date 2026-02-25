@@ -13,15 +13,16 @@ export async function POST(req: Request) {
         const quentnApiKey = process.env.QUENTN_API_KEY;
         const quentnSystemId = process.env.QUENTN_SYSTEM_ID;
 
-        if (!quentnApiKey) {
-            console.warn("QUENTN_API_KEY is missing. Simulating successful subscription.");
-            // For local testing without an API key, simulate success
+        // Quentn requires a tailored base URL (e.g., https://yourbase.quentn.com/api/v1)
+        const quentnBaseUrl = process.env.QUENTN_BASE_URL;
+
+        if (!quentnApiKey || !quentnBaseUrl) {
+            console.warn("QUENTN_API_KEY or QUENTN_BASE_URL is missing. Simulating successful subscription.");
             return NextResponse.json({ success: true, message: 'Simulated subscription' }, { status: 200 });
         }
 
-        // Example conceptual Quentn API call to add to a list.
-        // NOTE: You must replace this URL with your actual Quentn API endpoint.
-        const quentnUrl = `https://api.quentn.com/public/v1/contacts`;
+        // The endpoint is appended to the user-specific base URL
+        const quentnUrl = `${quentnBaseUrl.replace(/\/$/, '')}/contacts`;
 
         try {
             const response = await fetch(quentnUrl, {
