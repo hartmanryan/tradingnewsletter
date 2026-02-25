@@ -25,6 +25,7 @@ export async function POST(req: Request) {
         const quentnUrl = `${quentnBaseUrl.replace(/\/$/, '')}/contacts`;
 
         try {
+            // According to Quentn documentation, creating a contact requires specific field mapping
             const response = await fetch(quentnUrl, {
                 method: 'POST',
                 headers: {
@@ -33,14 +34,21 @@ export async function POST(req: Request) {
                 },
                 body: JSON.stringify({
                     mail: email,
-                    // other required fields or tags to trigger standard campaigns
+                    terms: ["tradingnewsletter"]
                 })
             });
 
             if (!response.ok) {
-                const errorData = await response.text(); // Read as text in case it's not JSON
-                console.error('Quentn API Error Response:', errorData);
-                return NextResponse.json({ error: 'Failed to subscribe with Quentn. Please check your API configuration.' }, { status: response.status });
+                const errorData = await response.text();
+                // Usually Quentn returns validation errors if the email format is rejected or the API URL is wrong (e.g., missing /cb/ or trigger IDs).
+                console.error('Quentn API Error Response:', errorData, 'HTTP Status:', response.status);
+
+                // If it's a 404, the user's base URL or endpoint shape is incorrect
+                if (response.status === 404) {
+                    return NextResponse.json({ error: 'Quentn endpoint not found. Ensure QUENTN_BASE_URL is correct and points to a valid API Trigger / contact endpoint.' }, { status: 404 });
+                }
+
+                return NextResponse.json({ error: `Quentn API rejected the request (${response.status}). Check Vercel logs for details.` }, { status: response.status });
             }
         } catch (fetchError: any) {
             console.error('Fetch to Quentn failed directly:', fetchError);
