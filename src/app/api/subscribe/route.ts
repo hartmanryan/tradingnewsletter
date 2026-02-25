@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         }
 
         // The endpoint is appended to the user-specific base URL
-        const quentnUrl = `${quentnBaseUrl.replace(/\/$/, '')}/contacts`;
+        const quentnUrl = `${quentnBaseUrl.replace(/\/$/, '')}/contact`;
 
         try {
             // According to Quentn documentation, creating a contact requires specific field mapping
